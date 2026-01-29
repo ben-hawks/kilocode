@@ -60,22 +60,16 @@ export const Ollama = ({ apiConfiguration, setApiConfigurationField }: OllamaPro
 		const selectedModel = apiConfiguration?.ollamaModelId
 		if (!selectedModel) return false
 
-		// Check if model exists in local ollama models (fetched specifically for this config)
+		// Only validate against ollamaModels (fetched specifically for this configuration)
+		// Don't check routerModels as fallback - it uses global config and may be stale
 		if (Object.keys(ollamaModels).length > 0) {
 			// Local models have been fetched - this is the source of truth
 			return !(selectedModel in ollamaModels)
 		}
 
-		// If local models haven't loaded yet, check router models as fallback
-		if (routerModels.data?.ollama) {
-			const availableModels = Object.keys(routerModels.data.ollama)
-			// Show warning if model is not in the list
-			return !availableModels.includes(selectedModel)
-		}
-
-		// If neither source has loaded yet, don't show warning
+		// If models haven't loaded yet, don't show error (loading state)
 		return false
-	}, [apiConfiguration?.ollamaModelId, routerModels.data, ollamaModels])
+	}, [apiConfiguration?.ollamaModelId, ollamaModels])
 
 	return (
 		<>
