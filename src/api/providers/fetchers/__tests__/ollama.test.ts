@@ -116,6 +116,44 @@ describe("Ollama Fetcher", () => {
 			expect(parsedModel!.supportsImages).toBe(true)
 			expect(parsedModel!.supportsNativeTools).toBe(true)
 		})
+
+		// kilocode_change start: Tests for includeAllModels parameter
+		it("should return model info when includeAllModels is true even without tools capability", () => {
+			const modelDataWithoutTools = {
+				...ollamaModelsData["qwen3-2to16:latest"],
+				capabilities: ["completion"], // No "tools" capability - like codestral
+			}
+
+			const parsedModel = parseOllamaModel(modelDataWithoutTools as any, undefined, undefined, true)
+
+			expect(parsedModel).not.toBeNull()
+			expect(parsedModel!.supportsNativeTools).toBe(false) // Should correctly reflect actual capability
+		})
+
+		it("should return model info when includeAllModels is true even with undefined capabilities", () => {
+			const modelDataWithoutCapabilities = {
+				...ollamaModelsData["qwen3-2to16:latest"],
+				capabilities: undefined,
+			}
+
+			const parsedModel = parseOllamaModel(modelDataWithoutCapabilities as any, undefined, undefined, true)
+
+			expect(parsedModel).not.toBeNull()
+			expect(parsedModel!.supportsNativeTools).toBe(false)
+		})
+
+		it("should correctly set supportsNativeTools to true when model has tools capability with includeAllModels", () => {
+			const modelDataWithTools = {
+				...ollamaModelsData["qwen3-2to16:latest"],
+				capabilities: ["completion", "tools"],
+			}
+
+			const parsedModel = parseOllamaModel(modelDataWithTools as any, undefined, undefined, true)
+
+			expect(parsedModel).not.toBeNull()
+			expect(parsedModel!.supportsNativeTools).toBe(true)
+		})
+		// kilocode_change end
 	})
 
 	describe("getOllamaModels", () => {
@@ -236,6 +274,64 @@ describe("Ollama Fetcher", () => {
 			expect(Object.keys(result).length).toBe(0)
 			expect(result[modelName]).toBeUndefined()
 		})
+
+		// kilocode_change start: Tests for includeAllModels parameter
+		it("should include models without tools capability when includeAllModels is true", async () => {
+			const baseUrl = "http://localhost:11434"
+			const modelName = "codestral:latest"
+
+			const mockApiTagsResponse = {
+				models: [
+					{
+						name: modelName,
+						model: modelName,
+						modified_at: "2025-06-03T09:23:22.610222878-04:00",
+						size: 14333928010,
+						digest: "6a5f0c01d2c96c687d79e32fdd25b87087feb376bf9838f854d10be8cf3c10a5",
+						details: {
+							family: "mistral",
+							families: ["mistral"],
+							format: "gguf",
+							parameter_size: "22B",
+							parent_model: "",
+							quantization_level: "Q4_K_M",
+						},
+					},
+				],
+			}
+			const mockApiShowResponse = {
+				license: "Mock License",
+				modelfile: "FROM /path/to/blob\nTEMPLATE {{ .Prompt }}",
+				parameters: "num_ctx 4096\nstop_token <eos>",
+				template: "{{ .System }}USER: {{ .Prompt }}ASSISTANT:",
+				modified_at: "2025-06-03T09:23:22.610222878-04:00",
+				details: {
+					parent_model: "",
+					format: "gguf",
+					family: "mistral",
+					families: ["mistral"],
+					parameter_size: "22B",
+					quantization_level: "Q4_K_M",
+				},
+				model_info: {
+					"ollama.context_length": 32768,
+					"some.other.info": "value",
+				},
+				capabilities: ["completion"], // No tools capability - like codestral
+			}
+
+			mockedAxios.get.mockResolvedValueOnce({ data: mockApiTagsResponse })
+			mockedAxios.post.mockResolvedValueOnce({ data: mockApiShowResponse })
+
+			// Pass includeAllModels = true to include models without tools capability
+			const result = await getOllamaModels(baseUrl, undefined, undefined, true)
+
+			// Model should be included even without tools capability
+			expect(Object.keys(result).length).toBe(1)
+			expect(result[modelName]).toBeDefined()
+			expect(result[modelName].supportsNativeTools).toBe(false)
+		})
+		// kilocode_change end
 
 		it("should return an empty list if the initial /api/tags call fails", async () => {
 			const baseUrl = "http://localhost:11434"

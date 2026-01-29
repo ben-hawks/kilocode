@@ -980,7 +980,7 @@ export const webviewMessageHandler = async (
 						kilocodeOrganizationId: apiConfiguration.kilocodeOrganizationId,
 					},
 				},
-				{ key: "ollama", options: { provider: "ollama", baseUrl: apiConfiguration.ollamaBaseUrl } },
+				{ key: "ollama", options: { provider: "ollama", baseUrl: apiConfiguration.ollamaBaseUrl, includeAllModels: true } }, // kilocode_change: Include all models for UI
 				{ key: "vercel-ai-gateway", options: { provider: "vercel-ai-gateway" } },
 				{
 					key: "deepinfra",
@@ -1115,6 +1115,7 @@ export const webviewMessageHandler = async (
 					baseUrl: ollamaApiConfig.ollamaBaseUrl,
 					apiKey: ollamaApiConfig.ollamaApiKey,
 					numCtx: ollamaApiConfig.ollamaNumCtx, // kilocode_change
+					includeAllModels: true, // kilocode_change: Include all models for UI, including autocomplete-only models like codestral
 				}
 				// Flush cache and refresh to ensure fresh models.
 				await flushModels(ollamaOptions, true)

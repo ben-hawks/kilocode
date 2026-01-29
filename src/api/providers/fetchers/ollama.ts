@@ -42,6 +42,7 @@ export const parseOllamaModel = (
 	// kilocode_change start
 	baseUrl?: string,
 	numCtx?: number,
+	includeAllModels?: boolean,
 	// kilocode_change end
 ): ModelInfo | null => {
 	// kilocode_change start
@@ -67,11 +68,14 @@ export const parseOllamaModel = (
 	// The capabilities array is populated by Ollama based on model metadata
 	const supportsNativeTools = rawModel.capabilities?.includes("tools") ?? false
 
-	// Filter out models that don't support native tools
-	// This prevents users from selecting models that won't work properly with Roo Code's tool calling
-	if (!supportsNativeTools) {
+	// kilocode_change start
+	// Filter out models that don't support native tools unless includeAllModels is true.
+	// This prevents users from selecting models that won't work properly with Roo Code's tool calling,
+	// but allows autocomplete features to use models that only support completion (like codestral).
+	if (!supportsNativeTools && !includeAllModels) {
 		return null
 	}
+	// kilocode_change end
 
 	const modelInfo: ModelInfo = Object.assign({}, ollamaDefaultModelInfo, {
 		description: `Family: ${rawModel.details.family}, Context: ${contextWindow}, Size: ${rawModel.details.parameter_size}`,
@@ -79,7 +83,7 @@ export const parseOllamaModel = (
 		supportsPromptCache: true,
 		supportsImages: rawModel.capabilities?.includes("vision"),
 		maxTokens: contextWindow || ollamaDefaultModelInfo.contextWindow,
-		supportsNativeTools: true, // Only models with tools capability reach this point
+		supportsNativeTools, // kilocode_change: Set based on actual capability
 	})
 
 	return modelInfo
@@ -89,6 +93,7 @@ export async function getOllamaModels(
 	baseUrl = "http://localhost:11434",
 	apiKey?: string,
 	numCtx?: number, // kilocode_change
+	includeAllModels?: boolean, // kilocode_change: When true, includes models without tool calling capability (for autocomplete)
 ): Promise<Record<string, ModelInfo>> {
 	const models: Record<string, ModelInfo> = {}
 
@@ -127,9 +132,10 @@ export async function getOllamaModels(
 								// kilocode_change start
 								baseUrl,
 								numCtx,
+								includeAllModels,
 								// kilocode_change end
 							)
-							// Only include models that support native tools
+							// Only include models when parseOllamaModel returns a result
 							if (modelInfo) {
 								models[ollamaModel.name] = modelInfo
 							}

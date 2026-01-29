@@ -125,7 +125,7 @@ async function fetchModelsFromProvider(options: GetModelsOptions): Promise<Model
 			break
 		// kilocode_change end
 		case "ollama":
-			models = await getOllamaModels(options.baseUrl, options.apiKey, options.numCtx /*kilocode_change*/)
+			models = await getOllamaModels(options.baseUrl, options.apiKey, options.numCtx, options.includeAllModels) // kilocode_change
 			break
 		case "lmstudio":
 			models = await getLMStudioModels(options.baseUrl)
