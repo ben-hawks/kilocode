@@ -156,7 +156,7 @@ describe("Model Validation Functions", () => {
 			expect(result).toBeUndefined()
 		})
 
-		// kilocode_change: autocomplete profile validation tests
+		// kilocode_change start: autocomplete profile validation tests
 		it("returns undefined for autocomplete profile with model not in router models", () => {
 			const config: ProviderSettings = {
 				apiProvider: "ollama",
@@ -177,6 +177,17 @@ describe("Model Validation Functions", () => {
 
 			const result = getModelValidationError(config, mockRouterModels, allowAllOrganization)
 			expect(result).toBeUndefined()
+		})
+
+		it("returns error for autocomplete profile with model not allowed by organization", () => {
+			const config: ProviderSettings = {
+				apiProvider: "openrouter",
+				openRouterModelId: "another-valid-model", // Not allowed by restrictive org
+				profileType: "autocomplete",
+			}
+
+			const result = getModelValidationError(config, mockRouterModels, restrictiveOrganization)
+			expect(result).toContain("model") // Should still enforce organization restrictions
 		})
 		// kilocode_change end
 
@@ -281,7 +292,7 @@ describe("Model Validation Functions", () => {
 			expect(result).toBeUndefined()
 		})
 
-		// kilocode_change: autocomplete profile skips validation
+		// kilocode_change start: autocomplete profile skips validation
 		it("returns undefined for autocomplete profile with invalid model in validateApiConfigurationExcludingModelErrors", () => {
 			const config: ProviderSettings = {
 				apiProvider: "ollama",
