@@ -980,7 +980,17 @@ export const webviewMessageHandler = async (
 						kilocodeOrganizationId: apiConfiguration.kilocodeOrganizationId,
 					},
 				},
-				{ key: "ollama", options: { provider: "ollama", baseUrl: apiConfiguration.ollamaBaseUrl } },
+				// kilocode_change start: include apiKey and numCtx for ollama
+				{
+					key: "ollama",
+					options: {
+						provider: "ollama",
+						baseUrl: apiConfiguration.ollamaBaseUrl,
+						apiKey: apiConfiguration.ollamaApiKey,
+						numCtx: apiConfiguration.ollamaNumCtx,
+					},
+				},
+				// kilocode_change end,
 				{ key: "vercel-ai-gateway", options: { provider: "vercel-ai-gateway" } },
 				{
 					key: "deepinfra",
