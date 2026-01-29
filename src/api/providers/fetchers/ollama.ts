@@ -44,6 +44,10 @@ export const parseOllamaModel = (
 	numCtx?: number,
 	// kilocode_change end
 ): ModelInfo | null => {
+	// DEBUG: Log model being parsed
+	console.log("[DEBUG] parseOllamaModel - Parsing model:", rawModel.details?.family || "unknown")
+	console.log("[DEBUG] parseOllamaModel - Capabilities:", rawModel.capabilities)
+	
 	// kilocode_change start
 	const contextKey = rawModel.model_info && Object.keys(rawModel.model_info).find((k) => k.includes("context_length"))
 	const contextLengthFromModelInfo =
@@ -67,6 +71,8 @@ export const parseOllamaModel = (
 	// The capabilities array is populated by Ollama based on model metadata
 	const supportsNativeTools = rawModel.capabilities?.includes("tools") ?? false
 
+	console.log("[DEBUG] parseOllamaModel - supportsNativeTools:", supportsNativeTools)
+
 	// kilocode_change start
 	// Don't filter out models without tool support - they may still be useful for autocomplete/FIM
 	// The supportsNativeTools flag will be used to conditionally enable tool calling in createMessage()
@@ -79,6 +85,8 @@ export const parseOllamaModel = (
 		supportsNativeTools: supportsNativeTools, // Set based on actual capabilities
 	})
 	// kilocode_change end
+
+	console.log("[DEBUG] parseOllamaModel - Returning modelInfo for:", rawModel.details?.family || "unknown")
 
 	return modelInfo
 }

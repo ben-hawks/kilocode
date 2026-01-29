@@ -41,6 +41,9 @@ export const Ollama = ({ apiConfiguration, setApiConfigurationField }: OllamaPro
 			case "ollamaModels":
 				{
 					const newModels = message.ollamaModels ?? {}
+					console.log("[DEBUG] Ollama.tsx - Received ollamaModels message")
+					console.log("[DEBUG] Ollama.tsx - Models count:", Object.keys(newModels).length)
+					console.log("[DEBUG] Ollama.tsx - Model names:", Object.keys(newModels))
 					setOllamaModels(newModels)
 				}
 				break
@@ -51,6 +54,7 @@ export const Ollama = ({ apiConfiguration, setApiConfigurationField }: OllamaPro
 
 	// Refresh models on mount
 	useEffect(() => {
+		console.log("[DEBUG] Ollama.tsx - Component mounted, requesting models")
 		// Request fresh models - the handler now flushes cache automatically
 		vscode.postMessage({ type: "requestOllamaModels" })
 	}, [])
@@ -58,22 +62,40 @@ export const Ollama = ({ apiConfiguration, setApiConfigurationField }: OllamaPro
 	// Check if the selected model exists in the fetched models
 	const modelNotAvailable = useMemo(() => {
 		const selectedModel = apiConfiguration?.ollamaModelId
-		if (!selectedModel) return false
+		if (!selectedModel) {
+			console.log("[DEBUG] Ollama.tsx - No model selected")
+			return false
+		}
+
+		console.log("[DEBUG] Ollama.tsx - Validating model:", selectedModel)
+		console.log("[DEBUG] Ollama.tsx - ollamaModels available:", Object.keys(ollamaModels).length > 0)
+		console.log("[DEBUG] Ollama.tsx - ollamaModels keys:", Object.keys(ollamaModels))
+		console.log("[DEBUG] Ollama.tsx - routerModels.data?.ollama available:", !!routerModels.data?.ollama)
+		if (routerModels.data?.ollama) {
+			console.log("[DEBUG] Ollama.tsx - routerModels.data.ollama keys:", Object.keys(routerModels.data.ollama))
+		}
 
 		// Check if model exists in local ollama models (fetched specifically for this config)
 		if (Object.keys(ollamaModels).length > 0) {
 			// Local models have been fetched - this is the source of truth
-			return !(selectedModel in ollamaModels)
+			const isAvailable = selectedModel in ollamaModels
+			console.log("[DEBUG] Ollama.tsx - Model in ollamaModels?", isAvailable)
+			console.log("[DEBUG] Ollama.tsx - Validation result (from ollamaModels):", !isAvailable)
+			return !isAvailable
 		}
 
 		// If local models haven't loaded yet, check router models as fallback
 		if (routerModels.data?.ollama) {
 			const availableModels = Object.keys(routerModels.data.ollama)
+			const isAvailable = availableModels.includes(selectedModel)
+			console.log("[DEBUG] Ollama.tsx - Model in routerModels?", isAvailable)
+			console.log("[DEBUG] Ollama.tsx - Validation result (from routerModels):", !isAvailable)
 			// Show warning if model is not in the list
-			return !availableModels.includes(selectedModel)
+			return !isAvailable
 		}
 
 		// If neither source has loaded yet, don't show warning
+		console.log("[DEBUG] Ollama.tsx - No models loaded yet, returning false")
 		return false
 	}, [apiConfiguration?.ollamaModelId, routerModels.data, ollamaModels])
 
