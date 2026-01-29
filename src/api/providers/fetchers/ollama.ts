@@ -67,20 +67,18 @@ export const parseOllamaModel = (
 	// The capabilities array is populated by Ollama based on model metadata
 	const supportsNativeTools = rawModel.capabilities?.includes("tools") ?? false
 
-	// Filter out models that don't support native tools
-	// This prevents users from selecting models that won't work properly with Roo Code's tool calling
-	if (!supportsNativeTools) {
-		return null
-	}
-
+	// kilocode_change start
+	// Don't filter out models without tool support - they may still be useful for autocomplete/FIM
+	// The supportsNativeTools flag will be used to conditionally enable tool calling in createMessage()
 	const modelInfo: ModelInfo = Object.assign({}, ollamaDefaultModelInfo, {
 		description: `Family: ${rawModel.details.family}, Context: ${contextWindow}, Size: ${rawModel.details.parameter_size}`,
 		contextWindow: contextWindow || ollamaDefaultModelInfo.contextWindow,
 		supportsPromptCache: true,
 		supportsImages: rawModel.capabilities?.includes("vision"),
 		maxTokens: contextWindow || ollamaDefaultModelInfo.contextWindow,
-		supportsNativeTools: true, // Only models with tools capability reach this point
+		supportsNativeTools: supportsNativeTools, // Set based on actual capabilities
 	})
+	// kilocode_change end
 
 	return modelInfo
 }
@@ -129,7 +127,7 @@ export async function getOllamaModels(
 								numCtx,
 								// kilocode_change end
 							)
-							// Only include models that support native tools
+							// kilocode_change - parseOllamaModel now returns models regardless of tool support
 							if (modelInfo) {
 								models[ollamaModel.name] = modelInfo
 							}
