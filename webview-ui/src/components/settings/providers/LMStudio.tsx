@@ -61,6 +61,13 @@ export const LMStudio = ({ apiConfiguration, setApiConfigurationField }: LMStudi
 		const selectedModel = apiConfiguration?.lmStudioModelId
 		if (!selectedModel) return false
 
+		// kilocode_change start: Skip validation for autocomplete profiles
+		// Autocomplete profiles use specialized models that may not be in the general model list
+		if (apiConfiguration?.profileType === "autocomplete") {
+			return false
+		}
+		// kilocode_change end
+
 		// Check if model exists in local LM Studio models
 		if (Object.keys(lmStudioModels).length > 0 && selectedModel in lmStudioModels) {
 			return false // Model is available locally
@@ -75,12 +82,19 @@ export const LMStudio = ({ apiConfiguration, setApiConfigurationField }: LMStudi
 
 		// If neither source has loaded yet, don't show warning
 		return false
-	}, [apiConfiguration?.lmStudioModelId, routerModels.data, lmStudioModels])
+	}, [apiConfiguration?.lmStudioModelId, routerModels.data, lmStudioModels, apiConfiguration?.profileType])
 
 	// Check if the draft model exists
 	const draftModelNotAvailable = useMemo(() => {
 		const draftModel = apiConfiguration?.lmStudioDraftModelId
 		if (!draftModel) return false
+
+		// kilocode_change start: Skip validation for autocomplete profiles
+		// Autocomplete profiles use specialized models that may not be in the general model list
+		if (apiConfiguration?.profileType === "autocomplete") {
+			return false
+		}
+		// kilocode_change end
 
 		// Check if model exists in local LM Studio models
 		if (Object.keys(lmStudioModels).length > 0 && draftModel in lmStudioModels) {
@@ -96,7 +110,7 @@ export const LMStudio = ({ apiConfiguration, setApiConfigurationField }: LMStudi
 
 		// If neither source has loaded yet, don't show warning
 		return false
-	}, [apiConfiguration?.lmStudioDraftModelId, routerModels.data, lmStudioModels])
+	}, [apiConfiguration?.lmStudioDraftModelId, routerModels.data, lmStudioModels, apiConfiguration?.profileType])
 
 	return (
 		<>

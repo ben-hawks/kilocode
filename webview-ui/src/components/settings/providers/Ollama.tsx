@@ -60,6 +60,13 @@ export const Ollama = ({ apiConfiguration, setApiConfigurationField }: OllamaPro
 		const selectedModel = apiConfiguration?.ollamaModelId
 		if (!selectedModel) return false
 
+		// kilocode_change start: Skip validation for autocomplete profiles
+		// Autocomplete profiles use specialized models that may not be in the general model list
+		if (apiConfiguration?.profileType === "autocomplete") {
+			return false
+		}
+		// kilocode_change end
+
 		// Check if model exists in local ollama models
 		if (Object.keys(ollamaModels).length > 0 && selectedModel in ollamaModels) {
 			return false // Model is available locally
@@ -74,7 +81,7 @@ export const Ollama = ({ apiConfiguration, setApiConfigurationField }: OllamaPro
 
 		// If neither source has loaded yet, don't show warning
 		return false
-	}, [apiConfiguration?.ollamaModelId, routerModels.data, ollamaModels])
+	}, [apiConfiguration?.ollamaModelId, routerModels.data, ollamaModels, apiConfiguration?.profileType])
 
 	return (
 		<>
