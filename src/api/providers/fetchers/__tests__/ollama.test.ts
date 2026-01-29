@@ -405,5 +405,64 @@ describe("Ollama Fetcher", () => {
 			expect(Object.keys(result).length).toBe(1)
 			expect(result[modelName]).toBeDefined()
 		})
+
+		// kilocode_change start
+		it("should include codestral:latest model for autocomplete even without tools capability", async () => {
+			const baseUrl = "http://localhost:11434"
+			const modelName = "codestral:latest"
+
+			const mockApiTagsResponse = {
+				models: [
+					{
+						name: modelName,
+						model: modelName,
+						modified_at: "2025-06-03T09:23:22.610222878-04:00",
+						size: 14333928010,
+						digest: "6a5f0c01d2c96c687d79e32fdd25b87087feb376bf9838f854d10be8cf3c10a5",
+						details: {
+							family: "mistral",
+							families: ["mistral"],
+							format: "gguf",
+							parameter_size: "22B",
+							parent_model: "",
+							quantization_level: "Q4_K_M",
+						},
+					},
+				],
+			}
+			const mockApiShowResponse = {
+				license: "Apache 2.0",
+				modelfile: "FROM /path/to/blob\nTEMPLATE {{ .Prompt }}",
+				parameters: "num_ctx 32768\nstop_token <eos>",
+				template: "{{ .System }}USER: {{ .Prompt }}ASSISTANT:",
+				modified_at: "2025-06-03T09:23:22.610222878-04:00",
+				details: {
+					parent_model: "",
+					format: "gguf",
+					family: "mistral",
+					families: ["mistral"],
+					parameter_size: "22B",
+					quantization_level: "Q4_K_M",
+				},
+				model_info: {
+					"ollama.context_length": 32768,
+					"some.other.info": "value",
+				},
+				// Codestral is primarily a code completion model and may not have tools capability
+				capabilities: ["completion"],
+			}
+
+			mockedAxios.get.mockResolvedValueOnce({ data: mockApiTagsResponse })
+			mockedAxios.post.mockResolvedValueOnce({ data: mockApiShowResponse })
+
+			const result = await getOllamaModels(baseUrl)
+
+			// codestral:latest should be available for autocomplete use even without tools capability
+			expect(Object.keys(result).length).toBe(1)
+			expect(result[modelName]).toBeDefined()
+			expect(result[modelName].supportsNativeTools).toBe(false)
+			expect(result[modelName].contextWindow).toBe(32768)
+		})
+		// kilocode_change end
 	})
 })
