@@ -1093,12 +1093,6 @@ export const webviewMessageHandler = async (
 				if (result.status === "fulfilled") {
 					routerModels[routerName] = result.value.models
 
-					// DEBUG: Log ollama models specifically
-					if (routerName === "ollama") {
-						console.log("[DEBUG] requestRouterModels - Ollama models count:", Object.keys(result.value.models).length)
-						console.log("[DEBUG] requestRouterModels - Ollama model names:", Object.keys(result.value.models))
-					}
-
 					// Ollama and LM Studio settings pages still need these events. They are not fetched here.
 				} else {
 					// Handle rejection: Post a specific error message for this provider.
@@ -1116,11 +1110,6 @@ export const webviewMessageHandler = async (
 				}
 			})
 
-			// DEBUG: Log final routerModels for ollama
-			if (routerModels.ollama) {
-				console.log("[DEBUG] requestRouterModels - Final ollama models:", Object.keys(routerModels.ollama))
-			}
-
 			provider.postMessageToWebview({
 				type: "routerModels",
 				routerModels,
@@ -1137,18 +1126,10 @@ export const webviewMessageHandler = async (
 					apiKey: ollamaApiConfig.ollamaApiKey,
 					numCtx: ollamaApiConfig.ollamaNumCtx, // kilocode_change
 				}
-				// DEBUG: Log what we're fetching
-				console.log("[DEBUG] requestOllamaModels - Fetching from baseUrl:", ollamaOptions.baseUrl)
-				
 				// Flush cache and refresh to ensure fresh models.
 				await flushModels(ollamaOptions, true)
 
 				const ollamaModels = await getModels(ollamaOptions)
-
-				// DEBUG: Log what we got
-				console.log("[DEBUG] requestOllamaModels - Fetched models count:", Object.keys(ollamaModels).length)
-				console.log("[DEBUG] requestOllamaModels - Model names:", Object.keys(ollamaModels))
-				console.log("[DEBUG] requestOllamaModels - Model details:", JSON.stringify(ollamaModels, null, 2))
 
 				if (Object.keys(ollamaModels).length > 0) {
 					provider.postMessageToWebview({ type: "ollamaModels", ollamaModels: ollamaModels })
