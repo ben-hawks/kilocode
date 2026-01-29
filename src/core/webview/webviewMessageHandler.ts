@@ -990,7 +990,7 @@ export const webviewMessageHandler = async (
 						numCtx: apiConfiguration.ollamaNumCtx,
 					},
 				},
-				// kilocode_change end,
+				// kilocode_change end
 				{ key: "vercel-ai-gateway", options: { provider: "vercel-ai-gateway" } },
 				{
 					key: "deepinfra",
