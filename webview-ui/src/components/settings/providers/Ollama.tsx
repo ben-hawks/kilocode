@@ -60,19 +60,26 @@ export const Ollama = ({ apiConfiguration, setApiConfigurationField }: OllamaPro
 		const selectedModel = apiConfiguration?.ollamaModelId
 		if (!selectedModel) return false
 
-		// kilocode_change start: Skip validation for autocomplete profiles
-		// Autocomplete profiles use specialized models that may not be in the general model list
-		if (apiConfiguration?.profileType === "autocomplete") {
-			return false
-		}
-		// kilocode_change end
-
 		// Check if model exists in local ollama models
 		if (Object.keys(ollamaModels).length > 0 && selectedModel in ollamaModels) {
 			return false // Model is available locally
 		}
 
-		// If we have router models data for Ollama
+		// kilocode_change start: For autocomplete profiles, only check local models
+		// Autocomplete profiles use specialized models that may not be in router models list
+		// (router models may only include models with "tools" capability)
+		// But we still need to validate the model exists on Ollama
+		if (apiConfiguration?.profileType === "autocomplete") {
+			// If we have local models and the model isn't there, show error
+			if (Object.keys(ollamaModels).length > 0) {
+				return true // Model not found in local Ollama models
+			}
+			// If local models haven't loaded yet, don't show warning
+			return false
+		}
+		// kilocode_change end
+
+		// For chat profiles, also check router models data
 		if (routerModels.data?.ollama) {
 			const availableModels = Object.keys(routerModels.data.ollama)
 			// Show warning if model is not in the list (regardless of how many models there are)
