@@ -60,7 +60,7 @@ export const parseOllamaModel = (
 		numCtx ??
 		(baseUrl?.toLowerCase().startsWith("https://ollama.com") ? contextLengthFromModelInfo : undefined) ??
 		contextLengthFromEnvironment ??
-		(contextLengthFromModelParameters !== 40960 ? contextLengthFromModelParameters : undefined) ?? // Alledgedly Ollama sometimes returns an undefind context as 40960
+		(contextLengthFromModelParameters !== 40960 ? contextLengthFromModelParameters : undefined) ?? // Allegedly Ollama sometimes returns an undefined context as 40960
 		4096 // This is usually the default: https://github.com/ollama/ollama/blob/4383a3ab7a075eff78b31f7dc84c747e2fcd22b8/docs/faq.md#how-can-i-specify-the-context-window-size
 	// kilocode_change end
 	// Determine native tool support from capabilities array
