@@ -250,7 +250,7 @@ describe("webviewMessageHandler - requestOllamaModels", () => {
 			type: "requestOllamaModels",
 		})
 
-		expect(mockGetModels).toHaveBeenCalledWith({ provider: "ollama", baseUrl: "http://localhost:1234" })
+		expect(mockGetModels).toHaveBeenCalledWith({ provider: "ollama", baseUrl: "http://localhost:1234", apiKey: undefined, numCtx: undefined, includeAllModels: true }) // kilocode_change: Updated to include new parameters
 
 		expect(mockClineProvider.postMessageToWebview).toHaveBeenCalledWith({
 			type: "ollamaModels",
