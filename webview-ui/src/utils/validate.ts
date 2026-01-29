@@ -297,13 +297,6 @@ function validateDynamicProviderModelId(
 		return undefined
 	}
 
-	// kilocode_change start: Skip validation for autocomplete profiles
-	// Autocomplete profiles use specialized models that may not be in the general router models list
-	if (apiConfiguration.profileType === "autocomplete") {
-		return undefined
-	}
-	// kilocode_change end
-
 	const modelId = getModelIdForProvider(apiConfiguration, provider)
 
 	if (!modelId) {

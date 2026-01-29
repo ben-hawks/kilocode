@@ -156,41 +156,6 @@ describe("Model Validation Functions", () => {
 			expect(result).toBeUndefined()
 		})
 
-		// kilocode_change start: autocomplete profile validation tests
-		it("returns undefined for autocomplete profile with model not in router models", () => {
-			const config: ProviderSettings = {
-				apiProvider: "ollama",
-				ollamaModelId: "codestral:latest",
-				profileType: "autocomplete",
-			}
-
-			const result = getModelValidationError(config, mockRouterModels, allowAllOrganization)
-			expect(result).toBeUndefined()
-		})
-
-		it("returns undefined for autocomplete profile even with invalid model", () => {
-			const config: ProviderSettings = {
-				apiProvider: "openrouter",
-				openRouterModelId: "some-autocomplete-model-not-in-list",
-				profileType: "autocomplete",
-			}
-
-			const result = getModelValidationError(config, mockRouterModels, allowAllOrganization)
-			expect(result).toBeUndefined()
-		})
-
-		it("returns error for autocomplete profile with model not allowed by organization", () => {
-			const config: ProviderSettings = {
-				apiProvider: "openrouter",
-				openRouterModelId: "another-valid-model", // Not allowed by restrictive org
-				profileType: "autocomplete",
-			}
-
-			const result = getModelValidationError(config, mockRouterModels, restrictiveOrganization)
-			expect(result).toContain("model") // Should still enforce organization restrictions
-		})
-		// kilocode_change end
-
 		it("returns undefined for OpenAI models when no router models provided", () => {
 			const config: ProviderSettings = {
 				apiProvider: "openai",
@@ -291,19 +256,6 @@ describe("Model Validation Functions", () => {
 			const result = getModelValidationError(config, mockRouterModels, allowAllOrganization)
 			expect(result).toBeUndefined()
 		})
-
-		// kilocode_change start: autocomplete profile skips validation
-		it("returns undefined for autocomplete profile with invalid model in validateApiConfigurationExcludingModelErrors", () => {
-			const config: ProviderSettings = {
-				apiProvider: "ollama",
-				ollamaModelId: "codestral:latest",
-				profileType: "autocomplete",
-			}
-
-			const result = validateApiConfigurationExcludingModelErrors(config, mockRouterModels, allowAllOrganization)
-			expect(result).toBeUndefined()
-		})
-		// kilocode_change end
 	})
 })
 
