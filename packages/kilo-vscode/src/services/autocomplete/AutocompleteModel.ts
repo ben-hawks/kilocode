@@ -2,7 +2,8 @@ import type { ResponseMetaData, AutocompleteProviderConfig } from "./types"
 import { getTemplateForModel } from "./continuedev/core/autocomplete/templating/AutocompleteTemplate"
 import type { KiloConnectionService } from "../cli-backend"
 
-const DEFAULT_MODEL = "mistralai/codestral-2508"
+const DEFAULT_FIM_MODEL = "mistralai/codestral-2508"
+const DEFAULT_MODEL_NAME = "codestral"
 const PROVIDER_DISPLAY_NAME = "Kilo Gateway"
 
 /** Chunk from an LLM streaming response */
@@ -93,7 +94,7 @@ export class AutocompleteModel {
       {
         prefix,
         suffix,
-        model: DEFAULT_MODEL,
+        model: DEFAULT_FIM_MODEL,
         maxTokens: 256,
         temperature: 0.2,
       },
@@ -150,6 +151,9 @@ export class AutocompleteModel {
     const headers: Record<string, string> = { "Content-Type": "application/json" }
     if (cfg.apiKey) {
       headers["Authorization"] = `Bearer ${cfg.apiKey}`
+    }
+    if (cfg.headers) {
+      Object.assign(headers, cfg.headers)
     }
 
     const body = JSON.stringify({
@@ -232,7 +236,7 @@ export class AutocompleteModel {
     if (this.providerConfig.type === "openai-compatible" && this.providerConfig.openai?.model) {
       return this.providerConfig.openai.model
     }
-    return DEFAULT_MODEL
+    return DEFAULT_MODEL_NAME
   }
 
   public getProviderDisplayName(): string {

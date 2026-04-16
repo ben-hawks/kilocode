@@ -790,10 +790,7 @@ export class KiloProvider implements vscode.WebviewViewProvider, TelemetryProper
             "enableAutoTrigger",
             "enableSmartInlineTaskKeybinding",
             "enableChatAutocomplete",
-            "providerType",
-            "openaiBaseUrl",
-            "openaiApiKey",
-            "openaiModel",
+            "model",
           ])
           if (allowedKeys.has(message.key)) {
             await vscode.workspace
@@ -3019,10 +3016,7 @@ export class KiloProvider implements vscode.WebviewViewProvider, TelemetryProper
         enableAutoTrigger: config.get<boolean>("enableAutoTrigger", true),
         enableSmartInlineTaskKeybinding: config.get<boolean>("enableSmartInlineTaskKeybinding", false),
         enableChatAutocomplete: config.get<boolean>("enableChatAutocomplete", false),
-        providerType: config.get<string>("providerType", "kilo"),
-        openaiBaseUrl: config.get<string>("openaiBaseUrl", ""),
-        openaiApiKey: config.get<string>("openaiApiKey", ""),
-        openaiModel: config.get<string>("openaiModel", ""),
+        model: config.get<string>("model", "kilo/codestral"),
       },
     })
   }

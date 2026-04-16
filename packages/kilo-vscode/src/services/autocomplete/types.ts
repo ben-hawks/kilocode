@@ -228,6 +228,8 @@ export interface OpenAICompatibleConfig {
   apiKey: string
   /** Model identifier to send in requests */
   model: string
+  /** Optional extra headers */
+  headers?: Record<string, string>
 }
 
 export interface AutocompleteProviderConfig {

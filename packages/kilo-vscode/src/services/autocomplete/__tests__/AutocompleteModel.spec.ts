@@ -110,9 +110,9 @@ describe("AutocompleteModel", () => {
   })
 
   describe("getModelName", () => {
-    it("returns the default model", () => {
+    it("returns the default model name (codestral)", () => {
       const model = new AutocompleteModel()
-      expect(model.getModelName()).toBe("mistralai/codestral-2508")
+      expect(model.getModelName()).toBe("codestral")
     })
 
     it("returns the openai-compatible model when configured", () => {

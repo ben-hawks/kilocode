@@ -734,33 +734,10 @@
           "default": false,
           "description": "Enable chat textarea autocomplete"
         },
-        "kilo-code.new.autocomplete.providerType": {
+        "kilo-code.new.autocomplete.model": {
           "type": "string",
-          "default": "kilo",
-          "enum": [
-            "kilo",
-            "openai-compatible"
-          ],
-          "enumDescriptions": [
-            "Use Kilo Gateway (default, requires Kilo account)",
-            "Use an OpenAI-compatible API endpoint (Ollama, LM Studio, vLLM, etc.)"
-          ],
-          "description": "Autocomplete provider to use for inline code suggestions"
-        },
-        "kilo-code.new.autocomplete.openaiBaseUrl": {
-          "type": "string",
-          "default": "",
-          "description": "Base URL for OpenAI-compatible API (e.g. http://localhost:11434/v1)"
-        },
-        "kilo-code.new.autocomplete.openaiApiKey": {
-          "type": "string",
-          "default": "",
-          "description": "API key for OpenAI-compatible provider (optional for local servers)"
-        },
-        "kilo-code.new.autocomplete.openaiModel": {
-          "type": "string",
-          "default": "",
-          "description": "Model name to use with OpenAI-compatible provider (e.g. codellama, qwen2.5-coder)"
+          "default": "kilo/codestral",
+          "description": "Autocomplete model in providerID/modelID format (e.g. kilo/codestral, my-ollama/qwen2.5-coder)"
         },
         "kilo-code.new.claudeCodeCompat": {
           "type": "boolean",

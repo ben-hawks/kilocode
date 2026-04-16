@@ -8,21 +8,18 @@ import { AutocompleteCodeActionProvider } from "./AutocompleteCodeActionProvider
 import { AutocompleteInlineCompletionProvider } from "./classic-auto-complete/AutocompleteInlineCompletionProvider"
 import { AutocompleteTelemetry } from "./classic-auto-complete/AutocompleteTelemetry"
 import type { KiloConnectionService } from "../cli-backend"
-import type { AutocompleteProviderType, AutocompleteProviderConfig } from "./types"
+import type { AutocompleteProviderConfig } from "./types"
 
 const CONFIG_SECTION = "kilo-code.new.autocomplete"
+const DEFAULT_AUTOCOMPLETE_MODEL = "kilo/codestral"
 
 export interface AutocompleteServiceSettings {
   enableAutoTrigger?: boolean
   enableSmartInlineTaskKeybinding?: boolean
   enableChatAutocomplete?: boolean
-  provider?: string
+  /** providerID/modelID string (e.g. "kilo/codestral" or "my-ollama/qwen2.5-coder") */
   model?: string
   snoozeUntil?: number
-  providerType?: AutocompleteProviderType
-  openaiBaseUrl?: string
-  openaiApiKey?: string
-  openaiModel?: string
 }
 
 function readSettings(): AutocompleteServiceSettings {
@@ -32,10 +29,7 @@ function readSettings(): AutocompleteServiceSettings {
     enableSmartInlineTaskKeybinding: config.get<boolean>("enableSmartInlineTaskKeybinding") ?? true,
     enableChatAutocomplete: config.get<boolean>("enableChatAutocomplete") ?? true,
     snoozeUntil: config.get<number>("snoozeUntil"),
-    providerType: (config.get<string>("providerType") as AutocompleteProviderType) ?? "kilo",
-    openaiBaseUrl: config.get<string>("openaiBaseUrl") ?? "",
-    openaiApiKey: config.get<string>("openaiApiKey") ?? "",
-    openaiModel: config.get<string>("openaiModel") ?? "",
+    model: config.get<string>("model") ?? DEFAULT_AUTOCOMPLETE_MODEL,
   }
 }
 
@@ -51,6 +45,7 @@ export class AutocompleteServiceManager {
 
   private readonly model: AutocompleteModel
   private readonly context: vscode.ExtensionContext
+  private readonly connectionService: KiloConnectionService
   private settings: AutocompleteServiceSettings | null = null
 
   private taskId: string | null = null
@@ -78,6 +73,7 @@ export class AutocompleteServiceManager {
     }
 
     this.context = context
+    this.connectionService = connectionService
     AutocompleteServiceManager._instance = this
 
     // Register Internal Components
@@ -126,7 +122,7 @@ export class AutocompleteServiceManager {
 
   public async load() {
     this.settings = readSettings()
-    this.applyProviderConfig()
+    await this.applyProviderConfig()
 
     await this.updateGlobalContext()
     this.updateStatusBar()
@@ -135,19 +131,78 @@ export class AutocompleteServiceManager {
   }
 
   /**
-   * Build an AutocompleteProviderConfig from the current settings and apply it to the model.
+   * Parse the autocomplete model setting (providerID/modelID) and build the
+   * appropriate AutocompleteProviderConfig. For the "kilo" provider, use the
+   * Kilo Gateway path. For any other provider, read its config from the CLI
+   * backend and build an OpenAI-compatible config.
    */
-  private applyProviderConfig(): void {
-    const type = this.settings?.providerType ?? "kilo"
-    const config: AutocompleteProviderConfig = { type }
-    if (type === "openai-compatible") {
-      config.openai = {
-        baseUrl: this.settings?.openaiBaseUrl ?? "",
-        apiKey: this.settings?.openaiApiKey ?? "",
-        model: this.settings?.openaiModel ?? "",
-      }
+  private async applyProviderConfig(): Promise<void> {
+    const raw = this.settings?.model ?? DEFAULT_AUTOCOMPLETE_MODEL
+    const slash = raw.indexOf("/")
+    const providerID = slash > 0 ? raw.slice(0, slash) : "kilo"
+    const modelID = slash > 0 ? raw.slice(slash + 1) : raw
+
+    if (providerID === "kilo") {
+      this.model.setProviderConfig({ type: "kilo" })
+      return
     }
-    this.model.setProviderConfig(config)
+
+    // For non-kilo providers, resolve config from the CLI backend
+    const resolved = await this.resolveProviderConfig(providerID, modelID)
+    this.model.setProviderConfig(resolved)
+  }
+
+  /**
+   * Resolve a provider's connection details from the CLI backend's global config.
+   */
+  private async resolveProviderConfig(providerID: string, modelID: string): Promise<AutocompleteProviderConfig> {
+    try {
+      const client = await this.connectionService.getClientAsync()
+      const { data: config } = await client.global.config.get({ throwOnError: true })
+      const provider = (config as Record<string, unknown>)?.provider as
+        | Record<string, Record<string, unknown>>
+        | undefined
+      const cfg = provider?.[providerID]
+      if (!cfg) {
+        console.warn(`[Kilo Autocomplete] Provider "${providerID}" not found in config, falling back to Kilo Gateway`)
+        return { type: "kilo" }
+      }
+
+      const opts = cfg.options as { baseURL?: string; headers?: Record<string, string> } | undefined
+      const base = opts?.baseURL ?? (cfg.base_url as string | undefined) ?? ""
+      if (!base) {
+        console.warn(`[Kilo Autocomplete] Provider "${providerID}" has no baseURL, falling back to Kilo Gateway`)
+        return { type: "kilo" }
+      }
+
+      // Resolve API key: try reading from the provider list (which includes keys)
+      let apiKey = (cfg.api_key as string | undefined) ?? ""
+      try {
+        const dir = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? ""
+        if (dir) {
+          const { data: response } = await client.provider.list({ directory: dir }, { throwOnError: true })
+          const match = response.all.find((p: Record<string, unknown>) => p.id === providerID)
+          if (match && typeof (match as Record<string, unknown>).key === "string") {
+            apiKey = (match as Record<string, unknown>).key as string
+          }
+        }
+      } catch {
+        // Key resolution is best-effort; local providers often don't need one
+      }
+
+      return {
+        type: "openai-compatible",
+        openai: {
+          baseUrl: base,
+          apiKey,
+          model: modelID,
+          headers: opts?.headers,
+        },
+      }
+    } catch (err) {
+      console.warn("[Kilo Autocomplete] Failed to resolve provider config, falling back to Kilo Gateway:", err)
+      return { type: "kilo" }
+    }
   }
 
   /**
