@@ -156,15 +156,7 @@ export class AutocompleteModel {
       Object.assign(headers, cfg.headers)
     }
 
-    const body = JSON.stringify({
-      model: cfg.model,
-      prompt,
-      max_tokens: 256,
-      temperature: 0.2,
-      stream: true,
-      stop,
-    })
-
+    const body = JSON.stringify({ model: cfg.model, prompt, max_tokens: 256, temperature: 0.2, stream: true, stop })
     const response = await fetch(url, { method: "POST", headers, body, signal })
 
     if (!response.ok) {
@@ -177,51 +169,64 @@ export class AutocompleteModel {
       throw new Error("OpenAI-compatible API returned no body")
     }
 
-    let inputTokens = 0
-    let outputTokens = 0
+    return this.readOpenAICompatibleStream(response.body, onChunk)
+  }
 
-    const reader = response.body.getReader()
+  /** Parse a single SSE data line and call onChunk if it contains completion text. */
+  private processOpenAISseLine(
+    line: string,
+    onChunk: (text: string) => void,
+    tokens: { input: number; output: number },
+  ): void {
+    const trimmed = line.trim()
+    if (!trimmed || !trimmed.startsWith("data:")) return
+    const payload = trimmed.slice(5).trim()
+    if (payload === "[DONE]") return
+
+    let parsed: {
+      choices?: Array<{ text?: string; delta?: { content?: string } }>
+      usage?: { prompt_tokens?: number; completion_tokens?: number }
+    }
+    try {
+      parsed = JSON.parse(payload)
+    } catch {
+      console.warn("[Kilo Autocomplete] Failed to parse SSE chunk:", payload.slice(0, 200))
+      return
+    }
+
+    // Support both /v1/completions (text) and /v1/chat/completions (delta.content)
+    const text = parsed.choices?.[0]?.text ?? parsed.choices?.[0]?.delta?.content
+    if (text) onChunk(text)
+
+    if (parsed.usage) {
+      tokens.input = parsed.usage.prompt_tokens ?? 0
+      tokens.output = parsed.usage.completion_tokens ?? 0
+    }
+  }
+
+  /** Drain a ReadableStream of SSE bytes, calling onChunk for each completion token. */
+  private async readOpenAICompatibleStream(
+    body: ReadableStream<Uint8Array>,
+    onChunk: (text: string) => void,
+  ): Promise<ResponseMetaData> {
+    const reader = body.getReader()
     const decoder = new TextDecoder()
+    const tokens = { input: 0, output: 0 }
     let buf = ""
 
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
+    for (;;) {
       const { done, value } = await reader.read()
       if (done) break
       buf += decoder.decode(value, { stream: true })
 
       const lines = buf.split("\n")
       buf = lines.pop() ?? ""
-
       for (const line of lines) {
-        const trimmed = line.trim()
-        if (!trimmed || !trimmed.startsWith("data:")) continue
-        const payload = trimmed.slice(5).trim()
-        if (payload === "[DONE]") continue
-
-        let parsed: {
-          choices?: Array<{ text?: string; delta?: { content?: string } }>
-          usage?: { prompt_tokens?: number; completion_tokens?: number }
-        }
-        try {
-          parsed = JSON.parse(payload)
-        } catch {
-          console.warn("[Kilo Autocomplete] Failed to parse SSE chunk:", payload.slice(0, 200))
-          continue
-        }
-
-        // Support both /v1/completions (text) and /v1/chat/completions (delta.content)
-        const text = parsed.choices?.[0]?.text ?? parsed.choices?.[0]?.delta?.content
-        if (text) onChunk(text)
-
-        if (parsed.usage) {
-          inputTokens = parsed.usage.prompt_tokens ?? 0
-          outputTokens = parsed.usage.completion_tokens ?? 0
-        }
+        this.processOpenAISseLine(line, onChunk, tokens)
       }
     }
 
-    return { cost: 0, inputTokens, outputTokens, cacheWriteTokens: 0, cacheReadTokens: 0 }
+    return { cost: 0, inputTokens: tokens.input, outputTokens: tokens.output, cacheWriteTokens: 0, cacheReadTokens: 0 }
   }
 
   /**

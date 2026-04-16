@@ -3020,7 +3020,6 @@ export class KiloProvider implements vscode.WebviewViewProvider, TelemetryProper
       },
     })
   }
-
   /** Wait until the webview has sent "webviewReady". Resolves immediately when already ready. */
   public waitForReady(): Promise<void> {
     return this.isWebviewReady && this.webview ? Promise.resolve() : new Promise((r) => this.readyResolvers.push(r))
