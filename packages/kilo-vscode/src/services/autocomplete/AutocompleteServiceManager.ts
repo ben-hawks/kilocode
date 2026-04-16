@@ -154,29 +154,43 @@ export class AutocompleteServiceManager {
 
   /**
    * Resolve a provider's connection details from the CLI backend's global config.
+   *
+   * @param providerID - The provider identifier (e.g. "my-ollama")
+   * @param modelID - The model identifier within that provider (e.g. "qwen2.5-coder")
+   * @returns An AutocompleteProviderConfig for the resolved provider, or a Kilo Gateway fallback
    */
   private async resolveProviderConfig(providerID: string, modelID: string): Promise<AutocompleteProviderConfig> {
+    interface ProviderOptions {
+      baseURL?: string
+      headers?: Record<string, string>
+    }
+    interface ProviderEntry {
+      options?: ProviderOptions
+      base_url?: string
+      api_key?: string
+    }
+    interface GlobalConfig {
+      provider?: Record<string, ProviderEntry>
+    }
+
     try {
       const client = await this.connectionService.getClientAsync()
-      const { data: config } = await client.global.config.get({ throwOnError: true })
-      const provider = (config as Record<string, unknown>)?.provider as
-        | Record<string, Record<string, unknown>>
-        | undefined
-      const cfg = provider?.[providerID]
+      const { data } = await client.global.config.get({ throwOnError: true })
+      const config = data as GlobalConfig
+      const cfg = config?.provider?.[providerID]
       if (!cfg) {
         console.warn(`[Kilo Autocomplete] Provider "${providerID}" not found in config, falling back to Kilo Gateway`)
         return { type: "kilo" }
       }
 
-      const opts = cfg.options as { baseURL?: string; headers?: Record<string, string> } | undefined
-      const base = opts?.baseURL ?? (cfg.base_url as string | undefined) ?? ""
+      const base = cfg.options?.baseURL ?? cfg.base_url ?? ""
       if (!base) {
         console.warn(`[Kilo Autocomplete] Provider "${providerID}" has no baseURL, falling back to Kilo Gateway`)
         return { type: "kilo" }
       }
 
       // Resolve API key: try reading from the provider list (which includes keys)
-      let apiKey = (cfg.api_key as string | undefined) ?? ""
+      let apiKey = cfg.api_key ?? ""
       try {
         const dir = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? ""
         if (dir) {
@@ -196,7 +210,7 @@ export class AutocompleteServiceManager {
           baseUrl: base,
           apiKey,
           model: modelID,
-          headers: opts?.headers,
+          headers: cfg.options?.headers,
         },
       }
     } catch (err) {

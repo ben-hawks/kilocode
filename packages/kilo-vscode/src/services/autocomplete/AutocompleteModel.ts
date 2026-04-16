@@ -199,9 +199,15 @@ export class AutocompleteModel {
         const payload = trimmed.slice(5).trim()
         if (payload === "[DONE]") continue
 
-        const parsed = JSON.parse(payload) as {
+        let parsed: {
           choices?: Array<{ text?: string; delta?: { content?: string } }>
           usage?: { prompt_tokens?: number; completion_tokens?: number }
+        }
+        try {
+          parsed = JSON.parse(payload)
+        } catch {
+          console.warn("[Kilo Autocomplete] Failed to parse SSE chunk:", payload.slice(0, 200))
+          continue
         }
 
         // Support both /v1/completions (text) and /v1/chat/completions (delta.content)
