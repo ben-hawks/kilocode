@@ -73,6 +73,33 @@ describe("AutocompleteModel", () => {
       const model = new AutocompleteModel()
       expect(model.hasValidCredentials()).toBe(false)
     })
+
+    it("returns true for openai-compatible when baseUrl and model are set", () => {
+      const model = new AutocompleteModel()
+      model.setProviderConfig({
+        type: "openai-compatible",
+        openai: { baseUrl: "http://localhost:11434/v1", apiKey: "", model: "codellama" },
+      })
+      expect(model.hasValidCredentials()).toBe(true)
+    })
+
+    it("returns false for openai-compatible when baseUrl is missing", () => {
+      const model = new AutocompleteModel()
+      model.setProviderConfig({
+        type: "openai-compatible",
+        openai: { baseUrl: "", apiKey: "", model: "codellama" },
+      })
+      expect(model.hasValidCredentials()).toBe(false)
+    })
+
+    it("returns false for openai-compatible when model is missing", () => {
+      const model = new AutocompleteModel()
+      model.setProviderConfig({
+        type: "openai-compatible",
+        openai: { baseUrl: "http://localhost:11434/v1", apiKey: "", model: "" },
+      })
+      expect(model.hasValidCredentials()).toBe(false)
+    })
   })
 
   describe("supportsFim", () => {
@@ -87,12 +114,47 @@ describe("AutocompleteModel", () => {
       const model = new AutocompleteModel()
       expect(model.getModelName()).toBe("mistralai/codestral-2508")
     })
+
+    it("returns the openai-compatible model when configured", () => {
+      const model = new AutocompleteModel()
+      model.setProviderConfig({
+        type: "openai-compatible",
+        openai: { baseUrl: "http://localhost:11434/v1", apiKey: "", model: "qwen2.5-coder" },
+      })
+      expect(model.getModelName()).toBe("qwen2.5-coder")
+    })
   })
 
   describe("getProviderDisplayName", () => {
     it("returns Kilo Gateway", () => {
       const model = new AutocompleteModel()
       expect(model.getProviderDisplayName()).toBe("Kilo Gateway")
+    })
+
+    it("returns OpenAI Compatible when configured", () => {
+      const model = new AutocompleteModel()
+      model.setProviderConfig({ type: "openai-compatible" })
+      expect(model.getProviderDisplayName()).toBe("OpenAI Compatible")
+    })
+  })
+
+  describe("setProviderConfig", () => {
+    it("stores and returns provider config", () => {
+      const model = new AutocompleteModel()
+      const config = {
+        type: "openai-compatible" as const,
+        openai: { baseUrl: "http://localhost:11434/v1", apiKey: "sk-test", model: "codellama" },
+      }
+      model.setProviderConfig(config)
+      expect(model.getProviderConfig()).toEqual(config)
+    })
+  })
+
+  describe("hasBalance", () => {
+    it("returns true for openai-compatible provider", async () => {
+      const model = new AutocompleteModel()
+      model.setProviderConfig({ type: "openai-compatible" })
+      expect(await model.hasBalance()).toBe(true)
     })
   })
 
@@ -162,6 +224,28 @@ describe("AutocompleteModel", () => {
           temperature: 0.2,
         },
         expect.objectContaining({ signal }),
+      )
+    })
+
+    it("throws for openai-compatible when baseUrl is missing", async () => {
+      const model = new AutocompleteModel()
+      model.setProviderConfig({
+        type: "openai-compatible",
+        openai: { baseUrl: "", apiKey: "", model: "codellama" },
+      })
+      await expect(model.generateFimResponse("prefix", "suffix", vi.fn())).rejects.toThrow(
+        "OpenAI-compatible provider requires baseUrl and model",
+      )
+    })
+
+    it("throws for openai-compatible when model is missing", async () => {
+      const model = new AutocompleteModel()
+      model.setProviderConfig({
+        type: "openai-compatible",
+        openai: { baseUrl: "http://localhost:11434/v1", apiKey: "", model: "" },
+      })
+      await expect(model.generateFimResponse("prefix", "suffix", vi.fn())).rejects.toThrow(
+        "OpenAI-compatible provider requires baseUrl and model",
       )
     })
   })
