@@ -723,6 +723,10 @@ export interface AutocompleteSettingsLoadedMessage {
     enableAutoTrigger: boolean
     enableSmartInlineTaskKeybinding: boolean
     enableChatAutocomplete: boolean
+    providerType: string
+    openaiBaseUrl: string
+    openaiApiKey: string
+    openaiModel: string
   }
 }
 
@@ -1826,8 +1830,15 @@ export interface RequestAutocompleteSettingsMessage {
 
 export interface UpdateAutocompleteSettingMessage {
   type: "updateAutocompleteSetting"
-  key: "enableAutoTrigger" | "enableSmartInlineTaskKeybinding" | "enableChatAutocomplete"
-  value: boolean
+  key:
+    | "enableAutoTrigger"
+    | "enableSmartInlineTaskKeybinding"
+    | "enableChatAutocomplete"
+    | "providerType"
+    | "openaiBaseUrl"
+    | "openaiApiKey"
+    | "openaiModel"
+  value: boolean | string
 }
 
 export interface RequestChatCompletionMessage {

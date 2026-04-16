@@ -3,7 +3,7 @@ import { t } from "./shims/i18n"
 import type { AutocompleteStatusBarStateProps } from "./types"
 import { humanFormatSessionCost, formatTime } from "./statusbar-utils"
 
-const SUPPORTED_PROVIDER_DISPLAY_NAME = "Kilo Gateway"
+const SUPPORTED_PROVIDER_DISPLAY_NAMES = ["Kilo Gateway", "OpenAI Compatible"]
 const SETTINGS_COMMAND = `command:kilo-code.new.settingsButtonClicked?${encodeURIComponent(JSON.stringify(["autocomplete"]))}`
 
 export class AutocompleteStatusBar {
@@ -96,7 +96,7 @@ export class AutocompleteStatusBar {
     this.statusBar.text = t("kilocode:autocomplete.statusBar.warning")
     this.statusBar.tooltip = this.createMarkdownTooltip(
       t("kilocode:autocomplete.statusBar.tooltip.noUsableProvider", {
-        providers: SUPPORTED_PROVIDER_DISPLAY_NAME,
+        providers: SUPPORTED_PROVIDER_DISPLAY_NAMES.join(", "),
         command: SETTINGS_COMMAND,
       }),
     )

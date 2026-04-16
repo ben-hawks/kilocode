@@ -214,3 +214,23 @@ export interface AutocompleteContextProvider {
   model: AutocompleteModel
   ignoreController?: Promise<FileIgnoreController>
 }
+
+// ============================================================================
+// Autocomplete Provider Configuration
+// ============================================================================
+
+export type AutocompleteProviderType = "kilo" | "openai-compatible"
+
+export interface OpenAICompatibleConfig {
+  /** Base URL for the OpenAI-compatible API (e.g. http://localhost:11434/v1) */
+  baseUrl: string
+  /** Optional API key */
+  apiKey: string
+  /** Model identifier to send in requests */
+  model: string
+}
+
+export interface AutocompleteProviderConfig {
+  type: AutocompleteProviderType
+  openai?: OpenAICompatibleConfig
+}

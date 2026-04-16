@@ -8,6 +8,7 @@ import { AutocompleteCodeActionProvider } from "./AutocompleteCodeActionProvider
 import { AutocompleteInlineCompletionProvider } from "./classic-auto-complete/AutocompleteInlineCompletionProvider"
 import { AutocompleteTelemetry } from "./classic-auto-complete/AutocompleteTelemetry"
 import type { KiloConnectionService } from "../cli-backend"
+import type { AutocompleteProviderType, AutocompleteProviderConfig } from "./types"
 
 const CONFIG_SECTION = "kilo-code.new.autocomplete"
 
@@ -18,6 +19,10 @@ export interface AutocompleteServiceSettings {
   provider?: string
   model?: string
   snoozeUntil?: number
+  providerType?: AutocompleteProviderType
+  openaiBaseUrl?: string
+  openaiApiKey?: string
+  openaiModel?: string
 }
 
 function readSettings(): AutocompleteServiceSettings {
@@ -27,6 +32,10 @@ function readSettings(): AutocompleteServiceSettings {
     enableSmartInlineTaskKeybinding: config.get<boolean>("enableSmartInlineTaskKeybinding") ?? true,
     enableChatAutocomplete: config.get<boolean>("enableChatAutocomplete") ?? true,
     snoozeUntil: config.get<number>("snoozeUntil"),
+    providerType: (config.get<string>("providerType") as AutocompleteProviderType) ?? "kilo",
+    openaiBaseUrl: config.get<string>("openaiBaseUrl") ?? "",
+    openaiApiKey: config.get<string>("openaiApiKey") ?? "",
+    openaiModel: config.get<string>("openaiModel") ?? "",
   }
 }
 
@@ -117,11 +126,28 @@ export class AutocompleteServiceManager {
 
   public async load() {
     this.settings = readSettings()
+    this.applyProviderConfig()
 
     await this.updateGlobalContext()
     this.updateStatusBar()
     await this.ensureInlineCompletionProviderRegistration()
     this.setupSnoozeTimerIfNeeded()
+  }
+
+  /**
+   * Build an AutocompleteProviderConfig from the current settings and apply it to the model.
+   */
+  private applyProviderConfig(): void {
+    const type = this.settings?.providerType ?? "kilo"
+    const config: AutocompleteProviderConfig = { type }
+    if (type === "openai-compatible") {
+      config.openai = {
+        baseUrl: this.settings?.openaiBaseUrl ?? "",
+        apiKey: this.settings?.openaiApiKey ?? "",
+        model: this.settings?.openaiModel ?? "",
+      }
+    }
+    this.model.setProviderConfig(config)
   }
 
   /**
